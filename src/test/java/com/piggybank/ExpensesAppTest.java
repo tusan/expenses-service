@@ -1,34 +1,25 @@
 package com.piggybank;
 
-import com.piggybank.ExpensesApp.ExpensesAppContext;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.util.IOUtils;
 import com.piggybank.util.MockExternalConfReader;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExternalResource;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.stream.Collectors;
 
 import static com.piggybank.ExpensesApp.ExpensesAppContext.createWithExternalConfReader;
 
 public class ExpensesAppTest {
-    private static final ExpensesAppContext configurations = createWithExternalConfReader(new MockExternalConfReader());
-
-    @BeforeClass
-    public static void setUpBeforeClass() {
-        new ExpensesApp(configurations).run();
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() {
-        configurations.getEmbeddedServer().stop();
-    }
+    @Rule
+    public ExpensesAppTestContext context = new ExpensesAppTestContext();
 
     @Test
     public void shouldRunTheEmbeddedServer() throws Exception {
@@ -61,9 +52,27 @@ public class ExpensesAppTest {
     }
 
     private Expense parseResponse(HttpURLConnection con) throws IOException {
-        return configurations.getMapper().readValue(new BufferedReader(
-                new InputStreamReader(con.getInputStream()))
-                .lines()
-                .collect(Collectors.joining()), Expense.class);
+        return context.getContext()
+                .getMapper()
+                .readValue(IOUtils.inputStreamToString(con.getInputStream()),
+                        Expense.class);
+    }
+
+    static class ExpensesAppTestContext extends ExternalResource {
+        private static final ExpensesApp.ExpensesAppContext context = createWithExternalConfReader(new MockExternalConfReader());
+
+        @Override
+        protected void after() {
+            context.getEmbeddedServer().stop();
+        }
+
+        @Override
+        protected void before() {
+            new ExpensesApp(context).run();
+        }
+
+        ExpensesApp.ExpensesAppContext getContext() {
+            return context;
+        }
     }
 }

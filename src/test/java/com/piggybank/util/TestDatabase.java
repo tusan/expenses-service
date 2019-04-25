@@ -25,17 +25,10 @@ public class TestDatabase extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        conn.createStatement().executeUpdate("DROP TABLE IF EXISTS expenses");
-        String sql = "CREATE TABLE IF NOT EXISTS expenses(\n" +
-                "    id INTEGER NOT NULL AUTO_INCREMENT,\n" +
-                "    owner VARCHAR(255) NOT NULL,\n" +
-                "    type VARCHAR(255) NOT NULL,\n" +
-                "    description VARCHAR(255),\n" +
-                "    date TIMESTAMP NOT NULL,\n" +
-                "    amount DOUBLE NOT NULL,\n" +
-                "    PRIMARY KEY (id)\n" +
-                ")";
-        conn.createStatement().executeUpdate(sql);
+        conn.createStatement()
+                .executeUpdate(IOUtils.inputStreamToString(getClass()
+                                .getClassLoader()
+                                .getResourceAsStream("schema.sql")));
     }
 
     @Override
