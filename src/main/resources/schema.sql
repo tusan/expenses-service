@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS expenses(
+    id INTEGER NOT NULL AUTO_INCREMENT,
+    owner VARCHAR(255) NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    date TIMESTAMP NOT NULL,
+    amount DOUBLE NOT NULL,
+    PRIMARY KEY (id)
+)
