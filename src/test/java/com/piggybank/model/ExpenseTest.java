@@ -1,4 +1,4 @@
-package com.piggybank;
+package com.piggybank.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
