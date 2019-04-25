@@ -1,10 +1,10 @@
 package com.piggybank;
 
+import com.piggybank.ExpensesApp.ExpensesAppContext;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import com.piggybank.util.MockExternalConfReader;
+import org.junit.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,32 +15,31 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.stream.Collectors;
 
-public class ExpensesAppTest {
-    private ExpensesApp.ExpensesAppConfigurations configurations = ExpensesApp.withDefaultConfiguration();
+import static com.piggybank.ExpensesApp.ExpensesAppContext.createWithExternalConfReader;
 
-    @After
-    public void tearDown() {
+public class ExpensesAppTest {
+    private static final ExpensesAppContext configurations = createWithExternalConfReader(new MockExternalConfReader());
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        new ExpensesApp(configurations).run();
+    }
+
+    @AfterClass
+    public static void tearDownAfterClass() {
         configurations.getEmbeddedServer().stop();
     }
 
     @Test
     public void shouldRunTheEmbeddedServer() throws Exception {
-        ExpensesApp.main(null);
-
-        URL url = new URL("http://localhost:8080/hello");
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
+        HttpURLConnection con = makeGetCall();
 
         Assert.assertEquals(200, con.getResponseCode());
     }
 
     @Test
     public void shouldSerializeTheExpenseObject() throws Exception {
-        ExpensesApp.main(null);
-
-        URL url = new URL("http://localhost:8080/hello");
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
+        HttpURLConnection con = makeGetCall();
 
         Expense expected = Expense.newBuilder()
                 .owner("example@example.it")
@@ -51,6 +50,14 @@ public class ExpensesAppTest {
                 .build();
 
         Assert.assertEquals(expected, parseResponse(con));
+    }
+
+    private HttpURLConnection makeGetCall() throws IOException {
+        URL url = new URL("http://localhost:8080/hello");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+
+        return con;
     }
 
     private Expense parseResponse(HttpURLConnection con) throws IOException {
