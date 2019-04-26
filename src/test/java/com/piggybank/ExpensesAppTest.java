@@ -6,7 +6,7 @@ import com.piggybank.context.AppContext;
 import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
-import com.piggybank.util.ExternalConfReader;
+import com.piggybank.context.ExternalConfReader;
 import com.piggybank.util.IOUtils;
 import com.piggybank.util.MockExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;

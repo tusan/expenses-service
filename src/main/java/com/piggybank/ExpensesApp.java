@@ -1,62 +1,58 @@
 package com.piggybank;
 
-import com.piggybank.context.AppContext;
-import com.piggybank.context.AppRouting;
-import com.piggybank.context.DatabaseConnectionProvider;
-import com.piggybank.context.UndertowEmbeddedServer;
+import com.piggybank.context.*;
+import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
 import com.piggybank.model.JdbcExpenseRepository;
-import com.piggybank.util.EnvExternalConfReader;
-import com.piggybank.util.ExternalConfReader;
+import com.piggybank.util.IOUtils;
+import io.undertow.server.RoutingHandler;
+import io.undertow.util.Headers;
 
 import java.sql.Connection;
 
-public class ExpensesApp {
-    private final AppContext context;
-    private final ExternalConfReader externalConfReader;
-
+public class ExpensesApp extends EmbeddedServiceApp {
     ExpensesApp(AppContext context, ExternalConfReader externalConfReader) {
-        this.context = context;
-        this.externalConfReader = externalConfReader;
+        super(context, externalConfReader);
     }
 
     public static void main(String[] args) {
         new ExpensesApp(new ExpensesAppContext(), new EnvExternalConfReader()).run();
     }
 
-    void run() {
-        context.createContext(externalConfReader).start();
-    }
-
     static class ExpensesAppContext implements AppContext {
-        private static AppRouting withExpensesAppRouting(ExpenseRepository expenseRepository) {
-            return new AppRouting(expenseRepository);
-        }
+        @Override
+        public UndertowEmbeddedServer createContext(final ExternalConfReader externalConfReader) {
+            final Connection databaseConnection = JdbcConnectionProvider.forCurrentConfigs(externalConfReader);
+            final ExpenseRepository expenseRepository = new JdbcExpenseRepository(databaseConnection);
+            final AppRouting expenseAppRouting = new ExpenseAppRouting(expenseRepository);
 
-        private static UndertowEmbeddedServer createEmbeddedServer(AppRouting appRouting,
-                                                                   ExternalConfReader externalConfReader) {
             return UndertowEmbeddedServer.createAndConfigure(
-                    appRouting.getHandlers(),
+                    expenseAppRouting,
                     externalConfReader
             );
         }
+    }
 
-        private static Connection withDbConnection(ExternalConfReader externalConfReader) {
-            return DatabaseConnectionProvider.provide(externalConfReader);
-        }
+    static class ExpenseAppRouting implements AppRouting {
+        private final ExpenseRepository expenseRepository;
 
-        private static ExpenseRepository withExpenseRepository(Connection connection) {
-            return new JdbcExpenseRepository(connection);
+        ExpenseAppRouting(ExpenseRepository expenseRepository) {
+            this.expenseRepository = expenseRepository;
         }
 
         @Override
-        public UndertowEmbeddedServer createContext(ExternalConfReader externalConfReader) {
-            return createEmbeddedServer(
-                    withExpensesAppRouting(
-                            withExpenseRepository(withDbConnection(externalConfReader))
-                    ),
-                    externalConfReader
-            );
+        public RoutingHandler getHandlers() {
+            return new RoutingHandler()
+                    .get("/expenses", exchange -> {
+                        exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/json");
+                        exchange.getResponseSender().send(IOUtils.serialize(expenseRepository.getAllExpenses()));
+                    })
+                    .put("/expense", exchange -> exchange.getRequestReceiver()
+                            .receiveFullBytes((ex, message) -> {
+                                expenseRepository.save(IOUtils.deserialize(message, Expense.class));
+                                ex.setStatusCode(201);
+                            }));
         }
+
     }
 }

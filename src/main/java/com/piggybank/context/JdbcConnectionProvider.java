@@ -1,12 +1,10 @@
 package com.piggybank.context;
 
-import com.piggybank.util.ExternalConfReader;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 
-public class DatabaseConnectionProvider {
-    public static Connection provide(ExternalConfReader externalConfReader) {
+public class JdbcConnectionProvider {
+    public static Connection forCurrentConfigs(ExternalConfReader externalConfReader) {
         try {
             Class.forName(externalConfReader.get("database.driver.name")
                     .orElseThrow(IllegalArgumentException::new));
