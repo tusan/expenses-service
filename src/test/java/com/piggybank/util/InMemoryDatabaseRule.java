@@ -6,18 +6,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class TestDatabase extends ExternalResource {
-    private static final String JDBC_DRIVER = "org.h2.Driver";
-    private static final String DB_URL = "jdbc:h2:~/test";
-    private static final String USER = "sa";
-    private static final String PASS = "";
+public class InMemoryDatabaseRule extends ExternalResource {
 
     private Connection conn;
 
-    public TestDatabase() {
+    public InMemoryDatabaseRule() {
         try {
-            Class.forName(JDBC_DRIVER);
-            conn = DriverManager.getConnection(DB_URL, USER, PASS);
+            Class.forName("org.h2.Driver");
+            conn = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -27,8 +23,8 @@ public class TestDatabase extends ExternalResource {
     protected void before() throws Throwable {
         conn.createStatement()
                 .executeUpdate(IOUtils.inputStreamToString(getClass()
-                                .getClassLoader()
-                                .getResourceAsStream("schema.sql")));
+                        .getClassLoader()
+                        .getResourceAsStream("schema.sql")));
     }
 
     @Override
@@ -38,9 +34,5 @@ public class TestDatabase extends ExternalResource {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    public Connection getConnection() {
-        return conn;
     }
 }

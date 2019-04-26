@@ -1,78 +1,123 @@
 package com.piggybank;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.piggybank.ExpensesApp.ExpensesAppContext;
+import com.piggybank.context.AppContext;
+import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.util.ExternalConfReader;
 import com.piggybank.util.IOUtils;
 import com.piggybank.util.MockExternalConfReader;
+import com.piggybank.util.InMemoryDatabaseRule;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
 
-import java.io.IOException;
+import java.io.DataOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.Month;
-
-import static com.piggybank.ExpensesApp.ExpensesAppContext.createWithExternalConfReader;
+import java.util.Collections;
+import java.util.List;
 
 public class ExpensesAppTest {
     @Rule
-    public ExpensesAppTestContext context = new ExpensesAppTestContext();
+    public ExpensesAppContextRule context = new ExpensesAppContextRule();
 
     @Test
-    public void shouldRunTheEmbeddedServer() throws Exception {
-        HttpURLConnection con = makeGetCall();
+    public void shouldSaveAndRetrieveAnExpense() throws Exception {
+        Assert.assertEquals(
+                201,
+                doPut(Expense.newBuilder()
+                        .owner("example@example.it")
+                        .id(12345L)
+                        .date(LocalDate.of(2018, Month.NOVEMBER, 27))
+                        .type(ExpenseType.MOTORBIKE)
+                        .amount(24.5)
+                        .build()).getResponseCode()
+        );
 
-        Assert.assertEquals(200, con.getResponseCode());
-    }
+        HttpURLConnection connection = doGet();
+        Assert.assertEquals(200, connection.getResponseCode());
 
-    @Test
-    public void shouldSerializeTheExpenseObject() throws Exception {
-        HttpURLConnection con = makeGetCall();
+        List<Expense> actual = IOUtils.deserialize(
+                connection.getInputStream(),
+                new TypeReference<List<Expense>>() {
+                }
+        );
 
-        Expense expected = Expense.newBuilder()
+        Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
+                .id(1L)
                 .owner("example@example.it")
-                .id(12345L)
                 .date(LocalDate.of(2018, Month.NOVEMBER, 27))
                 .type(ExpenseType.MOTORBIKE)
                 .amount(24.5)
-                .build();
-
-        Assert.assertEquals(expected, parseResponse(con));
+                .build()), actual);
     }
 
-    private HttpURLConnection makeGetCall() throws IOException {
-        URL url = new URL("http://localhost:8080/hello");
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        con.setRequestMethod("GET");
+    private HttpURLConnection doPut(Object body) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8081/expense").openConnection();
+        connection.setRequestProperty(
+                "Content-Type",
+                "application/json"
+        );
+        connection.setRequestMethod("PUT");
+        connection.setDoOutput(true);
 
-        return con;
+        DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+
+        wr.writeBytes(IOUtils.serialize(body));
+        wr.flush();
+        wr.close();
+
+        return connection;
     }
 
-    private Expense parseResponse(HttpURLConnection con) throws IOException {
-        return context.getContext()
-                .getMapper()
-                .readValue(IOUtils.inputStreamToString(con.getInputStream()),
-                        Expense.class);
+    private HttpURLConnection doGet() throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8081/expenses").openConnection();
+        connection.setRequestMethod("GET");
+
+        return connection;
     }
 
-    static class ExpensesAppTestContext extends ExternalResource {
-        private static final ExpensesApp.ExpensesAppContext context = createWithExternalConfReader(new MockExternalConfReader());
+
+    private class ExpensesAppContextRule extends InMemoryDatabaseRule implements AppContext {
+        private AppContext delegate;
+        private UndertowEmbeddedServer embeddedServer;
+        private ExternalConfReader externalConfReader;
+
+        ExpensesAppContextRule() {
+            MockExternalConfReader externalConfReader = new MockExternalConfReader();
+
+            externalConfReader.set("server.port", "8081");
+            externalConfReader.set("server.host", "localhost");
+            externalConfReader.set("database.driver.name", "org.h2.Driver");
+            externalConfReader.set("database.url", "jdbc:h2:~/test");
+            externalConfReader.set("database.user", "sa");
+            externalConfReader.set("database.password", "");
+
+            this.externalConfReader = externalConfReader;
+            this.delegate = new ExpensesAppContext();
+        }
 
         @Override
         protected void after() {
-            context.getEmbeddedServer().stop();
+            super.after();
+            embeddedServer.stop();
         }
 
         @Override
-        protected void before() {
-            new ExpensesApp(context).run();
+        protected void before() throws Throwable{
+            super.before();
+            new ExpensesApp(this, externalConfReader).run();
         }
 
-        ExpensesApp.ExpensesAppContext getContext() {
-            return context;
+        @Override
+        public UndertowEmbeddedServer createContext(ExternalConfReader externalConfReader) {
+            embeddedServer = delegate.createContext(externalConfReader);
+            return embeddedServer;
         }
     }
 }

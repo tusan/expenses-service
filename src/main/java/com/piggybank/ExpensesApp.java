@@ -1,62 +1,62 @@
 package com.piggybank;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.base.Preconditions;
-import com.piggybank.server.EmbeddedServer;
-import com.piggybank.server.UndertowEmbeddedServer;
+import com.piggybank.context.AppContext;
+import com.piggybank.context.AppRouting;
+import com.piggybank.context.DatabaseConnectionProvider;
+import com.piggybank.context.UndertowEmbeddedServer;
+import com.piggybank.model.ExpenseRepository;
+import com.piggybank.model.JdbcExpenseRepository;
 import com.piggybank.util.EnvExternalConfReader;
 import com.piggybank.util.ExternalConfReader;
 
-public class ExpensesApp {
-    private final ExpensesAppContext configurations;
+import java.sql.Connection;
 
-    ExpensesApp(ExpensesAppContext configurations) {
-        this.configurations = configurations;
+public class ExpensesApp {
+    private final AppContext context;
+    private final ExternalConfReader externalConfReader;
+
+    ExpensesApp(AppContext context, ExternalConfReader externalConfReader) {
+        this.context = context;
+        this.externalConfReader = externalConfReader;
     }
 
     public static void main(String[] args) {
-        ExpensesApp app = new ExpensesApp(ExpensesAppContext.createDefault());
-        app.run();
+        new ExpensesApp(new ExpensesAppContext(), new EnvExternalConfReader()).run();
     }
 
     void run() {
-        configurations.getEmbeddedServer().start();
+        context.createContext(externalConfReader).start();
     }
 
-    static class ExpensesAppContext {
-        private final ObjectMapper mapper;
-        private final EmbeddedServer embeddedServer;
-
-        private ExpensesAppContext(ObjectMapper mapper, EmbeddedServer embeddedServer) {
-            this.mapper = mapper;
-            this.embeddedServer = embeddedServer;
+    static class ExpensesAppContext implements AppContext {
+        private static AppRouting withExpensesAppRouting(ExpenseRepository expenseRepository) {
+            return new AppRouting(expenseRepository);
         }
 
-        static ExpensesAppContext createWithExternalConfReader(ExternalConfReader externalConfReader) {
-            Preconditions.checkNotNull(externalConfReader);
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-
-            return new ExpensesAppContext(
-                    mapper,
-                    UndertowEmbeddedServer.createAndConfigure(mapper,
-                            externalConfReader.get("server.port").map(Integer::parseInt).orElse(8080),
-                            externalConfReader.get("").orElse("localhost"))
+        private static UndertowEmbeddedServer createEmbeddedServer(AppRouting appRouting,
+                                                                   ExternalConfReader externalConfReader) {
+            return UndertowEmbeddedServer.createAndConfigure(
+                    appRouting.getHandlers(),
+                    externalConfReader
             );
         }
 
-        static ExpensesAppContext createDefault() {
-            return createWithExternalConfReader(new EnvExternalConfReader());
+        private static Connection withDbConnection(ExternalConfReader externalConfReader) {
+            return DatabaseConnectionProvider.provide(externalConfReader);
         }
 
-        ObjectMapper getMapper() {
-            return mapper;
+        private static ExpenseRepository withExpenseRepository(Connection connection) {
+            return new JdbcExpenseRepository(connection);
         }
 
-        EmbeddedServer getEmbeddedServer() {
-            return embeddedServer;
+        @Override
+        public UndertowEmbeddedServer createContext(ExternalConfReader externalConfReader) {
+            return createEmbeddedServer(
+                    withExpensesAppRouting(
+                            withExpenseRepository(withDbConnection(externalConfReader))
+                    ),
+                    externalConfReader
+            );
         }
     }
 }
