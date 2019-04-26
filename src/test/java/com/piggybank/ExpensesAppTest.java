@@ -3,6 +3,7 @@ package com.piggybank;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.piggybank.ExpensesApp.ExpensesAppContext;
 import com.piggybank.context.AppContext;
+import com.piggybank.context.EmbeddedServiceApp;
 import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
@@ -111,7 +112,7 @@ public class ExpensesAppTest {
         @Override
         protected void before() throws Throwable{
             super.before();
-            new ExpensesApp(this, externalConfReader).run();
+            new EmbeddedServiceApp(this, externalConfReader).run();
         }
 
         @Override

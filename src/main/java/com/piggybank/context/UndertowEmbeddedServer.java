@@ -1,7 +1,6 @@
 package com.piggybank.context;
 
 import io.undertow.Undertow;
-import io.undertow.server.RoutingHandler;
 
 public class UndertowEmbeddedServer {
 
@@ -28,7 +27,7 @@ public class UndertowEmbeddedServer {
                 .build());
     }
 
-    public void start() {
+    void start() {
         server.start();
     }
 

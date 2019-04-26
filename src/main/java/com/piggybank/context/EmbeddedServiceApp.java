@@ -4,9 +4,13 @@ public class EmbeddedServiceApp {
     private final AppContext context;
     private final ExternalConfReader externalConfReader;
 
-    protected EmbeddedServiceApp(AppContext context, ExternalConfReader externalConfReader) {
+    public EmbeddedServiceApp(AppContext context, ExternalConfReader externalConfReader) {
         this.context = context;
         this.externalConfReader = externalConfReader;
+    }
+
+    public EmbeddedServiceApp(AppContext context) {
+        this(context, new EnvExternalConfReader());
     }
 
     public void run() {

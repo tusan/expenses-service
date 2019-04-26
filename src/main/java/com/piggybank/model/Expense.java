@@ -21,7 +21,12 @@ public class Expense {
     private final LocalDate date;
     private final double amount;
 
-    private Expense(Long id, String owner, ExpenseType type, String description, LocalDate date, double amount) {
+    private Expense(Long id,
+                    String owner,
+                    ExpenseType type,
+                    String description,
+                    LocalDate date,
+                    double amount) {
         this.id = id;
         this.owner = owner;
         this.type = type;
@@ -41,36 +46,40 @@ public class Expense {
     }
 
     @JsonProperty("owner")
-    public String owner() {
+    String owner() {
         return owner;
     }
 
     @JsonProperty("type")
-    public ExpenseType type() {
+    ExpenseType type() {
         return type;
     }
 
     @Nullable
     @JsonProperty("description")
-    public String description() {
+    String description() {
         return description;
     }
 
     @JsonProperty("date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    public LocalDate date() {
+    LocalDate date() {
         return date;
     }
 
     @JsonProperty("amount")
-    public double amount() {
+    double amount() {
         return amount;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Expense expense = (Expense) o;
         return Double.compare(expense.amount, amount) == 0 &&
                 Objects.equals(id, expense.id) &&
