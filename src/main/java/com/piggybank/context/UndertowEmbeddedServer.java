@@ -1,6 +1,8 @@
 package com.piggybank.context;
 
+import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
 import io.undertow.Undertow;
+import io.undertow.server.RoutingHandler;
 
 public class UndertowEmbeddedServer {
 
@@ -10,7 +12,7 @@ public class UndertowEmbeddedServer {
         this.server = server;
     }
 
-    public static UndertowEmbeddedServer createAndConfigure(final AppRouting routingHandler,
+    public static UndertowEmbeddedServer createAndConfigure(final RoutingHandler routingHandlers,
                                                             final ExternalConfReader externalConfReader) {
         final int port = externalConfReader
                 .get("server.port")
@@ -22,7 +24,7 @@ public class UndertowEmbeddedServer {
                 .orElse("localhost");
 
         return new UndertowEmbeddedServer(Undertow.builder()
-                .setHandler(routingHandler.getHandlers())
+                .setHandler(routingHandlers)
                 .addHttpListener(port, host)
                 .build());
     }

@@ -1,6 +1,6 @@
 package com.piggybank.util;
 
-import com.piggybank.context.ExternalConfReader;
+import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
 
 import java.util.HashMap;
 import java.util.Map;

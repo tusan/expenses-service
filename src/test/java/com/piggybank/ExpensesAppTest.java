@@ -2,12 +2,12 @@ package com.piggybank;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.piggybank.ExpensesApp.ExpensesAppContext;
-import com.piggybank.context.AppContext;
 import com.piggybank.context.EmbeddedServiceApp;
+import com.piggybank.context.EmbeddedServiceApp.AppContext;
+import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
 import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
-import com.piggybank.context.ExternalConfReader;
 import com.piggybank.util.IOUtils;
 import com.piggybank.util.MockExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;
