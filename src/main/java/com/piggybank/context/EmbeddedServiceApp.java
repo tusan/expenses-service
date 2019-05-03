@@ -27,7 +27,7 @@ public class EmbeddedServiceApp {
         Optional<String> get(String prop);
     }
 
-   public static class EnvExternalConfReader implements ExternalConfReader {
+    public static class EnvExternalConfReader implements ExternalConfReader {
         @Override
         public Optional<String> get(String prop) {
             return Optional.ofNullable(System.getenv(prop));

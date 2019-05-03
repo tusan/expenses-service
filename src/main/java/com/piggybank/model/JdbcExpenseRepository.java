@@ -2,12 +2,11 @@ package com.piggybank.model;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.piggybank.model.ResultSetConverter.toExpense;
+import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 
 public class JdbcExpenseRepository implements ExpenseRepository {
     private static final String SELECT_ALL = "select id, owner, type, description, date, amount from expenses";
@@ -21,9 +20,10 @@ public class JdbcExpenseRepository implements ExpenseRepository {
 
     @Override
     public List<Expense> getAllExpenses() {
-        try {
-            Statement stmt = connection.createStatement();
-            ResultSet resultSet = stmt.executeQuery(SELECT_ALL);
+        return wrapCheckedException(() -> {
+            ResultSet resultSet = connection
+                    .createStatement()
+                    .executeQuery(SELECT_ALL);
 
             ArrayList<Expense> result = new ArrayList<>();
 
@@ -32,23 +32,20 @@ public class JdbcExpenseRepository implements ExpenseRepository {
             }
 
             return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Override
     public void save(Expense expense) {
-        try {
-            Statement stmt = connection.createStatement();
-            stmt.executeUpdate(String.format(INSERT,
-                    expense.owner(),
-                    expense.type(),
-                    expense.description(),
-                    expense.date(),
-                    expense.amount()));
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        wrapCheckedException(() ->
+                connection.createStatement()
+                        .executeUpdate(String.format(
+                                INSERT,
+                                expense.owner(),
+                                expense.type(),
+                                expense.description(),
+                                expense.date(),
+                                expense.amount()
+                        )));
     }
 }

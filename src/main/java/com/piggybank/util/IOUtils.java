@@ -1,18 +1,16 @@
 package com.piggybank.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static java.util.Objects.requireNonNull;
+import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 
 public class IOUtils {
     private static final ObjectMapper OBJECT_MAPPER;
@@ -22,36 +20,27 @@ public class IOUtils {
         OBJECT_MAPPER.registerModule(new JavaTimeModule());
     }
 
-    public static String readFileFromClassPath(String fileName) {
-        return new BufferedReader(
-                new InputStreamReader(requireNonNull(IOUtils.class
-                        .getClassLoader()
-                        .getResourceAsStream(fileName))))
+    public static Optional<String> readFileFromClassPath(String fileName) {
+        final Optional<InputStream> resource = Optional.ofNullable(IOUtils.class
+                .getClassLoader()
+                .getResourceAsStream(fileName));
+
+        return resource.map(res -> new BufferedReader(
+                new InputStreamReader(res))
                 .lines()
-                .collect(Collectors.joining());
+                .collect(Collectors.joining()));
+
     }
 
     public static <T> String serialize(T obj) {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return wrapCheckedException(() -> OBJECT_MAPPER.writeValueAsString(obj));
     }
 
     public static <T> T deserialize(byte[] value, Class<T> type) {
-        try {
-            return OBJECT_MAPPER.readValue(value, type);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return wrapCheckedException(() -> OBJECT_MAPPER.readValue(value, type));
     }
 
     public static <T> T deserialize(InputStream value, TypeReference<T> type) {
-        try {
-            return OBJECT_MAPPER.readValue(value, type);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return wrapCheckedException(() -> OBJECT_MAPPER.readValue(value, type));
     }
 }

@@ -3,11 +3,11 @@ package com.piggybank;
 import com.piggybank.context.EmbeddedServiceApp;
 import com.piggybank.context.EmbeddedServiceApp.AppContext;
 import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
+import com.piggybank.context.JdbcConnectionProvider;
 import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
 import com.piggybank.model.JdbcExpenseRepository;
-import com.piggybank.context.JdbcConnectionProvider;
 import io.undertow.server.RoutingHandler;
 import io.undertow.util.Headers;
 

@@ -82,7 +82,6 @@ public class Expense {
         }
         Expense expense = (Expense) o;
         return Double.compare(expense.amount, amount) == 0 &&
-                Objects.equals(id, expense.id) &&
                 Objects.equals(owner, expense.owner) &&
                 type == expense.type &&
                 Objects.equals(description, expense.description) &&
@@ -116,7 +115,7 @@ public class Expense {
         private Double amount;
 
         @JsonProperty("id")
-        public Builder id(Long id) {
+        Builder id(Long id) {
             this.id = id;
             return this;
         }

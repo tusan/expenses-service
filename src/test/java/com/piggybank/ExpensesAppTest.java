@@ -1,122 +1,87 @@
 package com.piggybank;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
 import com.piggybank.ExpensesApp.ExpensesAppContext;
-import com.piggybank.context.EmbeddedServiceApp;
-import com.piggybank.context.EmbeddedServiceApp.AppContext;
 import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
-import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.model.ResultSetConverter;
+import com.piggybank.util.EmbeddedAppTestRule;
 import com.piggybank.util.IOUtils;
 import com.piggybank.util.InMemoryDatabaseRule;
-import com.piggybank.util.MockExternalConfReader;
-import okhttp3.*;
+import com.piggybank.util.MapBasedConfReader;
+import okhttp3.Response;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static com.piggybank.util.IOUtils.readFileFromClassPath;
-import static com.piggybank.util.IOUtils.serialize;
 import static java.util.Objects.requireNonNull;
 
 public class ExpensesAppTest {
-    private static final OkHttpClient client = new OkHttpClient();
-    private static final TypeReference<List<Expense>> EXPENSES_LIST_TYPE = new TypeReference<List<Expense>>() {
-    };
+
+    private static final ExternalConfReader EXTERNAL_CONF_READER = new MapBasedConfReader(
+            ImmutableMap.<String, String>builder()
+                    .put("server.port", "8081")
+                    .put("server.host", "localhost")
+                    .put("database.driver.name", "org.h2.Driver")
+                    .put("database.url", "jdbc:h2:~/test")
+                    .put("database.user", "sa")
+                    .put("database.password", "")
+                    .build());
 
     @Rule
-    public ExpensesAppContextRule context = new ExpensesAppContextRule();
+    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(EXTERNAL_CONF_READER, new ExpensesAppContext());
+
+    @Rule
+    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(EXTERNAL_CONF_READER);
 
     @Test
-    public void shouldSaveAndRetrieveAnExpense() throws Exception {
+    public void shouldSaveAnExpense() throws Exception {
+        Expense expected = Expense.newBuilder()
+                .owner("example@test.org")
+                .date(LocalDate.of(2018, Month.NOVEMBER, 27))
+                .description("this is a test")
+                .type(ExpenseType.MOTORBIKE)
+                .amount(24.5)
+                .build();
+
         Assert.assertEquals(
                 201,
-                createExpense(Expense.newBuilder()
-                        .owner("example@example.it")
-                        .id(12345L)
-                        .date(LocalDate.of(2018, Month.NOVEMBER, 27))
-                        .type(ExpenseType.MOTORBIKE)
-                        .amount(24.5)
-                        .build())
+                contextRule.restClient().put("http://localhost:8081/expense", expected)
                         .code()
         );
 
-        Response response = fetchAll();
+        ResultSet resultSet = databaseRule.executeQuery("select id, owner, type, description, date, amount from expenses where id = 1");
+        Assert.assertTrue(resultSet.next());
+        Assert.assertEquals(expected, ResultSetConverter.toExpense(resultSet));
+    }
+
+    @Test
+    public void shouldRetrieveAnExpense() {
+        databaseRule.executeUpdate("insert into expenses (owner, type, description, date, amount) " +
+                "values('example@test.org', 'MOTORBIKE', 'highway milan', '2019-05-02', '5.4')");
+
+        Response response = contextRule.restClient().get("http://localhost:8081/expenses");
         Assert.assertEquals(200, response.code());
 
         List<Expense> actual = IOUtils.deserialize(
-                requireNonNull(response.body()).byteStream(), EXPENSES_LIST_TYPE
+                requireNonNull(response.body()).byteStream(), new TypeReference<List<Expense>>() {
+                }
         );
 
         Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
-                .id(5L)
-                .owner("example@example.it")
-                .date(LocalDate.of(2018, Month.NOVEMBER, 27))
+                .owner("example@test.org")
+                .date(LocalDate.of(2019, Month.MAY, 02))
                 .type(ExpenseType.MOTORBIKE)
-                .amount(24.5)
-                .build()), actual.stream().filter(exp -> exp.id() == 5).collect(Collectors.toList()));
-    }
-
-    private Response createExpense(Object body) throws IOException {
-        return client.newCall(new Request.Builder()
-                .url("http://localhost:8081/expense")
-                .put(RequestBody.create(MediaType.get("application/json"), serialize(body)))
-                .build())
-                .execute();
-    }
-
-    private Response fetchAll() throws IOException {
-        return client.newCall(new Request.Builder()
-                .url("http://localhost:8081/expenses")
-                .build())
-                .execute();
-    }
-
-
-    private class ExpensesAppContextRule extends InMemoryDatabaseRule implements AppContext {
-        private AppContext delegate;
-        private UndertowEmbeddedServer embeddedServer;
-        private ExternalConfReader externalConfReader;
-
-        ExpensesAppContextRule() {
-            MockExternalConfReader externalConfReader = new MockExternalConfReader();
-
-            externalConfReader.set("server.port", "8081");
-            externalConfReader.set("server.host", "localhost");
-            externalConfReader.set("database.driver.name", "org.h2.Driver");
-            externalConfReader.set("database.url", "jdbc:h2:~/test");
-            externalConfReader.set("database.user", "sa");
-            externalConfReader.set("database.password", "");
-
-            this.externalConfReader = externalConfReader;
-            this.delegate = new ExpensesAppContext();
-        }
-
-        @Override
-        protected void after() {
-            super.after();
-            embeddedServer.stop();
-        }
-
-        @Override
-        protected void before() throws Throwable {
-            super.before();
-            super.executeUpdate(readFileFromClassPath("data-test.sql"));
-            new EmbeddedServiceApp(this, externalConfReader).run();
-        }
-
-        @Override
-        public UndertowEmbeddedServer createContext(ExternalConfReader externalConfReader) {
-            embeddedServer = delegate.createContext(externalConfReader);
-            return embeddedServer;
-        }
+                .description("highway milan")
+                .amount(5.4)
+                .build()), actual);
     }
 }

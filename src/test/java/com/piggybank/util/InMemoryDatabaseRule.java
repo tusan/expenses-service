@@ -1,41 +1,38 @@
 package com.piggybank.util;
 
+import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
 import org.junit.rules.ExternalResource;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.ResultSet;
 
+import static com.piggybank.context.JdbcConnectionProvider.forCurrentConfigs;
+import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 import static com.piggybank.util.IOUtils.readFileFromClassPath;
 
 public class InMemoryDatabaseRule extends ExternalResource {
 
-    private Connection dbConnection;
+    private final Connection connection;
 
-    protected InMemoryDatabaseRule() {
-        try {
-            Class.forName("org.h2.Driver");
-            dbConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public InMemoryDatabaseRule(final ExternalConfReader externalConfReader) {
+        this.connection = forCurrentConfigs(externalConfReader);
     }
 
     @Override
-    protected void before() throws Throwable {
-        executeUpdate(readFileFromClassPath("schema.sql"));
+    protected void before() {
+        readFileFromClassPath("schema.sql").ifPresent(this::executeUpdate);
     }
 
     @Override
     protected void after() {
-        try {
-            executeUpdate("DROP TABLE IF EXISTS expenses");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        executeUpdate("DROP TABLE IF EXISTS expenses");
     }
 
-    protected void executeUpdate(String query) throws SQLException {
-        dbConnection.createStatement().executeUpdate(query);
+    public void executeUpdate(final String query) {
+        wrapCheckedException(() -> connection.createStatement().executeUpdate(query));
+    }
+
+    public ResultSet executeQuery(String query) {
+        return wrapCheckedException(() -> connection.createStatement().executeQuery(query));
     }
 }

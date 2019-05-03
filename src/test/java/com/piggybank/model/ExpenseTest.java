@@ -99,7 +99,8 @@ public class ExpenseTest {
                         .description("Affitto")
                         .type(ExpenseType.HOUSE)
                         .amount(400)
-                        .build());
+                        .build()
+        );
 
         Assert.assertEquals(expected, mapper.readValue(initialJson, new TypeReference<List<Expense>>() {
         }));

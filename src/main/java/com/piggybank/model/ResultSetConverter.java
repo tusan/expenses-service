@@ -3,8 +3,8 @@ package com.piggybank.model;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-class ResultSetConverter {
-    static Expense toExpense(final ResultSet resultSet) throws SQLException {
+public class ResultSetConverter {
+    public static Expense toExpense(final ResultSet resultSet) throws SQLException {
         return Expense.newBuilder()
                 .id(resultSet.getLong(1))
                 .owner(formatStringValue(resultSet.getString(2)))
@@ -16,7 +16,7 @@ class ResultSetConverter {
     }
 
     private static String formatStringValue(final String value) {
-        if(value == null || value.equalsIgnoreCase("null")) {
+        if (value == null || value.equalsIgnoreCase("null")) {
             return null;
         }
 
