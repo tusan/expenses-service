@@ -9,21 +9,24 @@ import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
 import com.piggybank.util.IOUtils;
-import com.piggybank.util.MockExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;
+import com.piggybank.util.MockExternalConfReader;
+import okhttp3.*;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.DataOutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Collections;
 import java.util.List;
 
+import static com.piggybank.util.IOUtils.serialize;
+
 public class ExpensesAppTest {
+    private static final OkHttpClient client = new OkHttpClient();
+
     @Rule
     public ExpensesAppContextRule context = new ExpensesAppContextRule();
 
@@ -31,20 +34,21 @@ public class ExpensesAppTest {
     public void shouldSaveAndRetrieveAnExpense() throws Exception {
         Assert.assertEquals(
                 201,
-                doPut(Expense.newBuilder()
+                createExpense(Expense.newBuilder()
                         .owner("example@example.it")
                         .id(12345L)
                         .date(LocalDate.of(2018, Month.NOVEMBER, 27))
                         .type(ExpenseType.MOTORBIKE)
                         .amount(24.5)
-                        .build()).getResponseCode()
+                        .build())
+                        .code()
         );
 
-        HttpURLConnection connection = doGet();
-        Assert.assertEquals(200, connection.getResponseCode());
+        Response response = fetchAll();
+        Assert.assertEquals(200, response.code());
 
         List<Expense> actual = IOUtils.deserialize(
-                connection.getInputStream(),
+                response.body().byteStream(),
                 new TypeReference<List<Expense>>() {
                 }
         );
@@ -58,29 +62,19 @@ public class ExpensesAppTest {
                 .build()), actual);
     }
 
-    private HttpURLConnection doPut(Object body) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8081/expense").openConnection();
-        connection.setRequestProperty(
-                "Content-Type",
-                "application/json"
-        );
-        connection.setRequestMethod("PUT");
-        connection.setDoOutput(true);
-
-        DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-
-        wr.writeBytes(IOUtils.serialize(body));
-        wr.flush();
-        wr.close();
-
-        return connection;
+    private Response createExpense(Object body) throws IOException {
+        return client.newCall(new Request.Builder()
+                .url("http://localhost:8081/expense")
+                .put(RequestBody.create(MediaType.get("application/json"), serialize(body)))
+                .build())
+                .execute();
     }
 
-    private HttpURLConnection doGet() throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL("http://localhost:8081/expenses").openConnection();
-        connection.setRequestMethod("GET");
-
-        return connection;
+    private Response fetchAll() throws IOException {
+        return client.newCall(new Request.Builder()
+                .url("http://localhost:8081/expenses")
+                .build())
+                .execute();
     }
 
 
@@ -110,7 +104,7 @@ public class ExpensesAppTest {
         }
 
         @Override
-        protected void before() throws Throwable{
+        protected void before() throws Throwable {
             super.before();
             new EmbeddedServiceApp(this, externalConfReader).run();
         }
