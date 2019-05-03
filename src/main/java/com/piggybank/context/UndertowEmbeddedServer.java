@@ -5,6 +5,8 @@ import io.undertow.Undertow;
 import io.undertow.server.RoutingHandler;
 
 public class UndertowEmbeddedServer {
+    public final static String SERVER_PORT = "SERVER_PORT";
+    public final static String SERVER_HOST = "SERVER_HOST";
 
     private final Undertow server;
 
@@ -15,12 +17,12 @@ public class UndertowEmbeddedServer {
     public static UndertowEmbeddedServer createAndConfigure(final RoutingHandler routingHandlers,
                                                             final ExternalConfReader externalConfReader) {
         final int port = externalConfReader
-                .get("server.port")
+                .get(SERVER_PORT)
                 .map(Integer::parseInt)
                 .orElse(8080);
 
         final String host = externalConfReader
-                .get("server.host")
+                .get(SERVER_HOST)
                 .orElse("localhost");
 
         return new UndertowEmbeddedServer(Undertow.builder()

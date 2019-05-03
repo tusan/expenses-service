@@ -22,25 +22,28 @@ import java.time.Month;
 import java.util.Collections;
 import java.util.List;
 
+import static com.piggybank.context.JdbcConnectionProvider.*;
+import static com.piggybank.context.UndertowEmbeddedServer.SERVER_HOST;
+import static com.piggybank.context.UndertowEmbeddedServer.SERVER_PORT;
 import static java.util.Objects.requireNonNull;
 
 public class ExpensesAppTest {
 
-    private static final ExternalConfReader EXTERNAL_CONF_READER = new MapBasedConfReader(
+    private static final ExternalConfReader TEST_CONFIGURATIONS = new MapBasedConfReader(
             ImmutableMap.<String, String>builder()
-                    .put("server.port", "8081")
-                    .put("server.host", "localhost")
-                    .put("database.driver.name", "org.h2.Driver")
-                    .put("database.url", "jdbc:h2:~/test")
-                    .put("database.user", "sa")
-                    .put("database.password", "")
+                    .put(SERVER_PORT, "8081")
+                    .put(SERVER_HOST, "localhost")
+                    .put(DATABASE_DRIVER_NAME, "org.h2.Driver")
+                    .put(DATABASE_URL, "jdbc:h2:~/test")
+                    .put(DATABASE_USER, "sa")
+                    .put(DATABASE_PASSWORD, "")
                     .build());
 
     @Rule
-    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(EXTERNAL_CONF_READER, new ExpensesAppContext());
+    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(TEST_CONFIGURATIONS, new ExpensesAppContext());
 
     @Rule
-    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(EXTERNAL_CONF_READER);
+    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(TEST_CONFIGURATIONS);
 
     @Test
     public void shouldSaveAnExpense() throws Exception {
@@ -78,7 +81,7 @@ public class ExpensesAppTest {
 
         Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
                 .owner("example@test.org")
-                .date(LocalDate.of(2019, Month.MAY, 02))
+                .date(LocalDate.of(2019, Month.MAY, 2))
                 .type(ExpenseType.MOTORBIKE)
                 .description("highway milan")
                 .amount(5.4)
