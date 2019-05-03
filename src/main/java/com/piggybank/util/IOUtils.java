@@ -9,7 +9,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
 
 public class IOUtils {
     private static final ObjectMapper OBJECT_MAPPER;
@@ -19,9 +22,11 @@ public class IOUtils {
         OBJECT_MAPPER.registerModule(new JavaTimeModule());
     }
 
-    public static String inputStreamToString(InputStream reader) {
+    public static String readFileFromClassPath(String fileName) {
         return new BufferedReader(
-                new InputStreamReader(reader))
+                new InputStreamReader(requireNonNull(IOUtils.class
+                        .getClassLoader()
+                        .getResourceAsStream(fileName))))
                 .lines()
                 .collect(Collectors.joining());
     }

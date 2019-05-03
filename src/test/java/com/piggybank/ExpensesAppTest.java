@@ -21,11 +21,16 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import static com.piggybank.util.IOUtils.readFileFromClassPath;
 import static com.piggybank.util.IOUtils.serialize;
+import static java.util.Objects.requireNonNull;
 
 public class ExpensesAppTest {
     private static final OkHttpClient client = new OkHttpClient();
+    private static final TypeReference<List<Expense>> EXPENSES_LIST_TYPE = new TypeReference<List<Expense>>() {
+    };
 
     @Rule
     public ExpensesAppContextRule context = new ExpensesAppContextRule();
@@ -48,18 +53,16 @@ public class ExpensesAppTest {
         Assert.assertEquals(200, response.code());
 
         List<Expense> actual = IOUtils.deserialize(
-                response.body().byteStream(),
-                new TypeReference<List<Expense>>() {
-                }
+                requireNonNull(response.body()).byteStream(), EXPENSES_LIST_TYPE
         );
 
         Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
-                .id(1L)
+                .id(5L)
                 .owner("example@example.it")
                 .date(LocalDate.of(2018, Month.NOVEMBER, 27))
                 .type(ExpenseType.MOTORBIKE)
                 .amount(24.5)
-                .build()), actual);
+                .build()), actual.stream().filter(exp -> exp.id() == 5).collect(Collectors.toList()));
     }
 
     private Response createExpense(Object body) throws IOException {
@@ -106,6 +109,7 @@ public class ExpensesAppTest {
         @Override
         protected void before() throws Throwable {
             super.before();
+            super.executeUpdate(readFileFromClassPath("data-test.sql"));
             new EmbeddedServiceApp(this, externalConfReader).run();
         }
 

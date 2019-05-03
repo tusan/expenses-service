@@ -6,14 +6,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static com.piggybank.util.IOUtils.readFileFromClassPath;
+
 public class InMemoryDatabaseRule extends ExternalResource {
 
-    private Connection conn;
+    private Connection dbConnection;
 
-    public InMemoryDatabaseRule() {
+    protected InMemoryDatabaseRule() {
         try {
             Class.forName("org.h2.Driver");
-            conn = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
+            dbConnection = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -21,18 +23,19 @@ public class InMemoryDatabaseRule extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        conn.createStatement()
-                .executeUpdate(IOUtils.inputStreamToString(getClass()
-                        .getClassLoader()
-                        .getResourceAsStream("schema.sql")));
+        executeUpdate(readFileFromClassPath("schema.sql"));
     }
 
     @Override
     protected void after() {
         try {
-            conn.createStatement().executeUpdate("DROP TABLE IF EXISTS expenses");
+            executeUpdate("DROP TABLE IF EXISTS expenses");
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    protected void executeUpdate(String query) throws SQLException {
+        dbConnection.createStatement().executeUpdate(query);
     }
 }
