@@ -16,7 +16,7 @@ public class EmbeddedServerModule {
 
     @Provides
     @Singleton
-    static Undertow provideServer(ExpenseController expenseController,
+    static Undertow provideServer(RoutingHandler routingHandler,
                                   ExternalConfReader externalConfReader) {
         final int port = externalConfReader
                 .get(SERVER_PORT)
@@ -28,16 +28,14 @@ public class EmbeddedServerModule {
                 .orElse("localhost");
 
         return Undertow.builder()
-                .setHandler(new RoutingHandler()
-                        .get("/expenses", expenseController::loadAll)
-                        .put("/expense", expenseController::save))
+                .setHandler(routingHandler)
                 .addHttpListener(port, host)
                 .build();
     }
 
     @Provides
     @Singleton
-    static ExpenseController provideController(ExpenseService expenseService) {
-        return new ExpenseController(expenseService);
+    static RoutingHandler provideRoutingHandler(final ExpenseService expenseService) {
+        return new ExpenseController(expenseService).routingHandler();
     }
 }
