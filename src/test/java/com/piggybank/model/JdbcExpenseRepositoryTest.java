@@ -1,8 +1,7 @@
 package com.piggybank.model;
 
 import com.google.common.collect.ImmutableMap;
-import com.piggybank.context.EmbeddedServiceApp;
-import com.piggybank.context.JdbcConnectionProvider;
+import com.piggybank.util.ExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;
 import com.piggybank.util.MapBasedConfReader;
 import org.junit.Assert;
@@ -17,12 +16,12 @@ import java.time.Month;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.piggybank.context.JdbcConnectionProvider.*;
-import static com.piggybank.context.UndertowEmbeddedServer.SERVER_HOST;
-import static com.piggybank.context.UndertowEmbeddedServer.SERVER_PORT;
+import static com.piggybank.model.JdbcConnectionProvider.*;
+import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
+import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 
 public class JdbcExpenseRepositoryTest {
-    private static final EmbeddedServiceApp.ExternalConfReader TEST_CONFIGURATIONS = new MapBasedConfReader(
+    private static final ExternalConfReader TEST_CONFIGURATIONS = new MapBasedConfReader(
             ImmutableMap.<String, String>builder()
                     .put(SERVER_PORT, "8081")
                     .put(SERVER_HOST, "localhost")
@@ -31,6 +30,7 @@ public class JdbcExpenseRepositoryTest {
                     .put(DATABASE_USER, "sa")
                     .put(DATABASE_PASSWORD, "")
                     .build());
+
     private final JdbcConnectionProvider jdbcConnectionProvider = new JdbcConnectionProvider(TEST_CONFIGURATIONS);
 
     @Rule
@@ -40,7 +40,7 @@ public class JdbcExpenseRepositoryTest {
 
     @Before
     public void setUp() {
-        sut = new JdbcExpenseRepository(jdbcConnectionProvider.forCurrentConfigs());
+        sut = new JdbcExpenseRepository(jdbcConnectionProvider);
     }
 
     @Test

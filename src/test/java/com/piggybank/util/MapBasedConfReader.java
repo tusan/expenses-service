@@ -1,7 +1,5 @@
 package com.piggybank.util;
 
-import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;

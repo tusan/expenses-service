@@ -1,6 +1,6 @@
-package com.piggybank.context;
+package com.piggybank.model;
 
-import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
+import com.piggybank.util.ExternalConfReader;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -19,7 +19,7 @@ public class JdbcConnectionProvider {
         this.externalConfReader = externalConfReader;
     }
 
-    public Connection forCurrentConfigs() {
+    public Connection provide() {
         return wrapCheckedException(() -> {
             Class.forName(externalConfReader.get(DATABASE_DRIVER_NAME)
                     .orElseThrow(IllegalArgumentException::new));

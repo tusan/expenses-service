@@ -3,7 +3,6 @@ package com.piggybank.service;
 import com.google.common.base.Preconditions;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
-import com.piggybank.model.ExpenseRepositoryFactory;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -11,11 +10,11 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-public class ExpenseServiceImpl implements ExpenseService {
+class ExpenseServiceImpl implements ExpenseService {
     private final ExpenseRepository expenseRepository;
 
-    public ExpenseServiceImpl(final ExpenseRepositoryFactory expenseRepositoryFactory) {
-        this.expenseRepository = expenseRepositoryFactory.getRepository();
+    ExpenseServiceImpl(final ExpenseRepository expenseRepository) {
+        this.expenseRepository = expenseRepository;
     }
 
     @Override

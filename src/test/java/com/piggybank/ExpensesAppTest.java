@@ -2,16 +2,11 @@ package com.piggybank;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
-import com.piggybank.ExpensesApp.ExpensesAppContext;
-import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
-import com.piggybank.context.JdbcConnectionProvider;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.model.JdbcConnectionProvider;
 import com.piggybank.model.ResultSetConverter;
-import com.piggybank.util.EmbeddedAppTestRule;
-import com.piggybank.util.IOUtils;
-import com.piggybank.util.InMemoryDatabaseRule;
-import com.piggybank.util.MapBasedConfReader;
+import com.piggybank.util.*;
 import okhttp3.Response;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -24,9 +19,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.piggybank.context.JdbcConnectionProvider.*;
-import static com.piggybank.context.UndertowEmbeddedServer.SERVER_HOST;
-import static com.piggybank.context.UndertowEmbeddedServer.SERVER_PORT;
+import static com.piggybank.model.JdbcConnectionProvider.*;
+import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
+import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 import static java.util.Objects.requireNonNull;
 
 public class ExpensesAppTest {
@@ -42,7 +37,11 @@ public class ExpensesAppTest {
                     .build());
 
     @Rule
-    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(TEST_CONFIGURATIONS, new ExpensesAppContext());
+    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(DaggerExpensesApp_ExpenseAppComponent
+            .builder()
+            .externalConfReader(TEST_CONFIGURATIONS)
+            .build()
+            .injectDependencies());
 
     @Rule
     public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(new JdbcConnectionProvider(TEST_CONFIGURATIONS));

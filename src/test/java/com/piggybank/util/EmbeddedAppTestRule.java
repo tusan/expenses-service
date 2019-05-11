@@ -1,37 +1,24 @@
 package com.piggybank.util;
 
-import com.piggybank.context.EmbeddedServiceApp;
-import com.piggybank.context.EmbeddedServiceApp.AppContext;
-import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
-import com.piggybank.context.UndertowEmbeddedServer;
+import io.undertow.Undertow;
 import okhttp3.*;
 import org.junit.rules.ExternalResource;
 
 import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 import static com.piggybank.util.IOUtils.serialize;
 
-public class EmbeddedAppTestRule extends ExternalResource implements AppContext {
-    private final AppContext delegate;
-    private final ExternalConfReader externalConfReader;
+public class EmbeddedAppTestRule extends ExternalResource {
+    private final Undertow server;
     private final RestClient restClient;
 
-    private UndertowEmbeddedServer server;
-
-    public EmbeddedAppTestRule(final ExternalConfReader externalConfReader, final AppContext delegate) {
-        this.externalConfReader = externalConfReader;
-        this.delegate = delegate;
+    public EmbeddedAppTestRule(final Undertow server) {
+        this.server = server;
         this.restClient = new RestClient();
     }
 
     @Override
-    public UndertowEmbeddedServer createContext(ExternalConfReader externalConfReader) {
-        server = delegate.createContext(externalConfReader);
-        return server;
-    }
-
-    @Override
     protected void before() {
-        new EmbeddedServiceApp(this, externalConfReader).run();
+        server.start();
     }
 
     @Override

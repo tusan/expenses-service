@@ -2,7 +2,6 @@ package com.piggybank.service;
 
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
-import com.piggybank.model.ExpenseRepositoryFactory;
 import com.piggybank.model.ExpenseType;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,26 +17,26 @@ import static org.junit.Assert.assertEquals;
 public class ExpenseServiceImplTest {
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNullDateStart() {
-        new ExpenseServiceImpl(new MockExpenseRepositoryFactory(null))
+        new ExpenseServiceImpl(new MockExpenseRepository(null))
                 .getAllExpenses(null, LocalDate.of(2019, Month.JUNE, 1));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNullDateEnd() {
-        new ExpenseServiceImpl(new MockExpenseRepositoryFactory(null))
+        new ExpenseServiceImpl(new MockExpenseRepository(null))
                 .getAllExpenses(LocalDate.of(2019, Month.JUNE, 1), null);
     }
 
     @Test
     public void shouldReturnAnEmptyListWhenNoDataIsReturnedFromRepository() {
-        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepositoryFactory(Collections.emptyList()));
+        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepository(Collections.emptyList()));
 
         Assert.assertTrue(sut.getAllExpenses(LocalDate.of(2019, Month.JUNE, 1), LocalDate.of(2019, 6, 1)).isEmpty());
     }
 
     @Test
     public void shouldFilterByDateStart() {
-        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepositoryFactory(Arrays.asList(
+        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepository(Arrays.asList(
                 buildExpense(LocalDate.of(2019, Month.MAY, 2)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 3)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 4))
@@ -57,7 +56,7 @@ public class ExpenseServiceImplTest {
 
     @Test
     public void shouldFilterByDateEnd() {
-        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepositoryFactory(Arrays.asList(
+        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepository(Arrays.asList(
                 buildExpense(LocalDate.of(2019, Month.MAY, 2)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 3)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 4))
@@ -77,7 +76,7 @@ public class ExpenseServiceImplTest {
 
     @Test
     public void shouldFilterDateInRange() {
-        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepositoryFactory(Arrays.asList(
+        ExpenseServiceImpl sut = new ExpenseServiceImpl(new MockExpenseRepository(Arrays.asList(
                 buildExpense(LocalDate.of(2019, Month.MAY, 1)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 2)),
                 buildExpense(LocalDate.of(2019, Month.MAY, 3)),
@@ -100,7 +99,7 @@ public class ExpenseServiceImplTest {
 
     @Test
     public void shouldSaveAnExpenseOnTheRepository() {
-        final MockExpenseRepositoryFactory factoryMock = new MockExpenseRepositoryFactory(null);
+        final MockExpenseRepository factoryMock = new MockExpenseRepository(null);
 
         ExpenseServiceImpl sut = new ExpenseServiceImpl(factoryMock);
 
@@ -119,28 +118,22 @@ public class ExpenseServiceImplTest {
                 .build();
     }
 
-    private class MockExpenseRepositoryFactory implements ExpenseRepositoryFactory {
+    private class MockExpenseRepository implements ExpenseRepository {
         private final List<Expense> mockedResult;
         private Expense saved;
 
-        MockExpenseRepositoryFactory(List<Expense> mockedResult) {
+        MockExpenseRepository(List<Expense> mockedResult) {
             this.mockedResult = mockedResult;
         }
 
         @Override
-        public ExpenseRepository getRepository() {
+        public List<Expense> getAllExpenses() {
+            return mockedResult;
+        }
 
-            return new ExpenseRepository() {
-                @Override
-                public List<Expense> getAllExpenses() {
-                    return mockedResult;
-                }
-
-                @Override
-                public void save(Expense expense) {
-                    saved = expense;
-                }
-            };
+        @Override
+        public void save(Expense expense) {
+            saved = expense;
         }
     }
 }
