@@ -13,6 +13,9 @@ public class JdbcConnectionProvider {
     public final static String DATABASE_USER = "DATABASE_USER";
     public final static String DATABASE_PASSWORD = "DATABASE_PASSWORD";
 
+    private static final Object LOCK = new Object();
+    private static Connection connection;
+
     private final ExternalConfReader externalConfReader;
 
     public JdbcConnectionProvider(ExternalConfReader externalConfReader) {
@@ -20,6 +23,16 @@ public class JdbcConnectionProvider {
     }
 
     public Connection provide() {
+        synchronized (LOCK) {
+            if (connection == null) {
+                connection = createConnection();
+            }
+        }
+
+        return connection;
+    }
+
+    private Connection createConnection() {
         return wrapCheckedException(() -> {
             Class.forName(externalConfReader.get(DATABASE_DRIVER_NAME)
                     .orElseThrow(IllegalArgumentException::new));
@@ -29,6 +42,5 @@ public class JdbcConnectionProvider {
                     externalConfReader.get(DATABASE_PASSWORD).orElseThrow(IllegalArgumentException::new)
             );
         });
-
     }
 }
