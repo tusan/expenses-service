@@ -3,7 +3,6 @@ package com.piggybank.server;
 import com.piggybank.model.Expense;
 import com.piggybank.service.ExpenseService;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
 import io.undertow.util.Headers;
 
 import java.time.LocalDate;
@@ -21,19 +20,7 @@ class ExpenseController {
         this.expenseService = expenseService;
     }
 
-    private static Optional<String> parseQueryParam(HttpServerExchange exchange, String param) {
-        return Optional.ofNullable(exchange.getQueryParameters()
-                .get(param))
-                .map(Deque::getFirst);
-    }
-
-    RoutingHandler routingHandler() {
-        return new RoutingHandler()
-                .get("/expenses", this::loadAll)
-                .put("/expense", this::save);
-    }
-
-    private void loadAll(HttpServerExchange exchange) {
+    void loadAll(HttpServerExchange exchange) {
         final LocalDate dateStart = parseQueryParam(exchange, "date-start")
                 .map(date -> LocalDate.parse(date, BASIC_ISO_DATE))
                 .orElse(LocalDate.EPOCH);
@@ -47,11 +34,18 @@ class ExpenseController {
                 .send(serialize(expenseService.getAllExpenses(dateStart, dateEnd)));
     }
 
-    private void save(HttpServerExchange exchange) {
+    void save(HttpServerExchange exchange) {
         exchange.getRequestReceiver()
                 .receiveFullBytes((ex, message) -> {
                     expenseService.save(deserialize(message, Expense.class));
                     ex.setStatusCode(201);
                 });
     }
+
+    private Optional<String> parseQueryParam(HttpServerExchange exchange, String param) {
+        return Optional.ofNullable(exchange.getQueryParameters()
+                .get(param))
+                .map(Deque::getFirst);
+    }
 }
+

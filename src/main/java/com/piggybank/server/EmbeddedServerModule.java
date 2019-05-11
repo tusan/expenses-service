@@ -35,7 +35,15 @@ public class EmbeddedServerModule {
 
     @Provides
     @Singleton
-    static RoutingHandler provideRoutingHandler(final ExpenseService expenseService) {
-        return new ExpenseController(expenseService).routingHandler();
+    static ExpenseController provideController(ExpenseService expenseService) {
+        return new ExpenseController(expenseService);
+    }
+
+    @Provides
+    @Singleton
+    static RoutingHandler provideRoutingHandler(final ExpenseController expenseController) {
+        return new RoutingHandler()
+                .get("/expenses", expenseController::loadAll)
+                .put("/expense", expenseController::save);
     }
 }
