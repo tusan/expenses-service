@@ -1,12 +1,11 @@
 package com.piggybank.util;
 
-import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
+import com.piggybank.context.JdbcConnectionProvider;
 import org.junit.rules.ExternalResource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 
-import static com.piggybank.context.JdbcConnectionProvider.forCurrentConfigs;
 import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 import static com.piggybank.util.IOUtils.readFileFromClassPath;
 
@@ -14,8 +13,8 @@ public class InMemoryDatabaseRule extends ExternalResource {
 
     private final Connection connection;
 
-    public InMemoryDatabaseRule(final ExternalConfReader externalConfReader) {
-        this.connection = forCurrentConfigs(externalConfReader);
+    public InMemoryDatabaseRule(final JdbcConnectionProvider jdbcConnectionProvider) {
+        this.connection = jdbcConnectionProvider.forCurrentConfigs();
     }
 
     @Override

@@ -63,7 +63,7 @@ public class Expense {
 
     @JsonProperty("date")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    LocalDate date() {
+    public LocalDate date() {
         return date;
     }
 

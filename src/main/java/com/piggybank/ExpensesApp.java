@@ -6,15 +6,21 @@ import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
 import com.piggybank.context.JdbcConnectionProvider;
 import com.piggybank.context.UndertowEmbeddedServer;
 import com.piggybank.model.Expense;
-import com.piggybank.model.ExpenseRepository;
-import com.piggybank.model.JdbcExpenseRepository;
+import com.piggybank.model.ExpenseRepositoryFactory;
+import com.piggybank.model.JdbcExpenseRepositoryFactory;
+import com.piggybank.service.ExpenseService;
+import com.piggybank.service.ExpenseServiceImpl;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.util.Headers;
 
-import java.sql.Connection;
+import java.time.LocalDate;
+import java.util.Deque;
+import java.util.Optional;
 
 import static com.piggybank.util.IOUtils.deserialize;
 import static com.piggybank.util.IOUtils.serialize;
+import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
 public class ExpensesApp {
     public static void main(String[] args) {
@@ -24,19 +30,28 @@ public class ExpensesApp {
     static class ExpensesAppContext implements AppContext {
         @Override
         public UndertowEmbeddedServer createContext(final ExternalConfReader externalConfReader) {
-            final Connection databaseConnection = JdbcConnectionProvider.forCurrentConfigs(externalConfReader);
-            final ExpenseRepository expenseRepository = new JdbcExpenseRepository(databaseConnection);
+            final JdbcConnectionProvider jdbcConnectionProvider = new JdbcConnectionProvider(externalConfReader);
+            final ExpenseRepositoryFactory expenseRepositoryFactory = new JdbcExpenseRepositoryFactory(jdbcConnectionProvider);
+            final ExpenseService expenseService = new ExpenseServiceImpl(expenseRepositoryFactory);
 
             final RoutingHandler routingHandlers =
                     new RoutingHandler()
                             .get("/expenses", exchange -> {
+                                final LocalDate dateStart = parseQueryParam(exchange, "date-start")
+                                        .map(date -> LocalDate.parse(date, BASIC_ISO_DATE))
+                                        .orElse(LocalDate.EPOCH);
+
+                                final LocalDate dateEnd = parseQueryParam(exchange, "date-end")
+                                        .map(date -> LocalDate.parse(date, BASIC_ISO_DATE))
+                                        .orElse(LocalDate.now());
+
                                 exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "text/json");
                                 exchange.getResponseSender()
-                                        .send(serialize(expenseRepository.getAllExpenses()));
+                                        .send(serialize(expenseService.getAllExpenses(dateStart, dateEnd)));
                             })
                             .put("/expense", exchange -> exchange.getRequestReceiver()
                                     .receiveFullBytes((ex, message) -> {
-                                        expenseRepository.save(deserialize(message, Expense.class));
+                                        expenseService.save(deserialize(message, Expense.class));
                                         ex.setStatusCode(201);
                                     }));
 
@@ -44,6 +59,12 @@ public class ExpensesApp {
                     routingHandlers,
                     externalConfReader
             );
+        }
+
+        private Optional<String> parseQueryParam(HttpServerExchange exchange, String param) {
+            return Optional.ofNullable(exchange.getQueryParameters()
+                    .get(param))
+                    .map(Deque::getFirst);
         }
     }
 }

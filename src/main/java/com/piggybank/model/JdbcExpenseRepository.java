@@ -8,13 +8,13 @@ import java.util.List;
 import static com.piggybank.model.ResultSetConverter.toExpense;
 import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 
-public class JdbcExpenseRepository implements ExpenseRepository {
-    private static final String SELECT_ALL = "select id, owner, type, description, date, amount from expenses";
+class JdbcExpenseRepository implements ExpenseRepository {
+    private static final String SELECT_ALL = "select id, owner, type, description, date, amount from expenses order by date desc limit 1000";
     private static final String INSERT = "insert into expenses (owner, type, description, date, amount) values('%s', '%s', '%s', '%s', '%s')";
 
     private final Connection connection;
 
-    public JdbcExpenseRepository(Connection connection) {
+    JdbcExpenseRepository(Connection connection) {
         this.connection = connection;
     }
 

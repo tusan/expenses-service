@@ -13,7 +13,13 @@ public class JdbcConnectionProvider {
     public final static String DATABASE_USER = "DATABASE_USER";
     public final static String DATABASE_PASSWORD = "DATABASE_PASSWORD";
 
-    public static Connection forCurrentConfigs(ExternalConfReader externalConfReader) {
+    private final ExternalConfReader externalConfReader;
+
+    public JdbcConnectionProvider(ExternalConfReader externalConfReader) {
+        this.externalConfReader = externalConfReader;
+    }
+
+    public Connection forCurrentConfigs() {
         return wrapCheckedException(() -> {
             Class.forName(externalConfReader.get(DATABASE_DRIVER_NAME)
                     .orElseThrow(IllegalArgumentException::new));

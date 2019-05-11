@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import com.piggybank.ExpensesApp.ExpensesAppContext;
 import com.piggybank.context.EmbeddedServiceApp.ExternalConfReader;
+import com.piggybank.context.JdbcConnectionProvider;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseType;
 import com.piggybank.model.ResultSetConverter;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,7 +45,7 @@ public class ExpensesAppTest {
     public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(TEST_CONFIGURATIONS, new ExpensesAppContext());
 
     @Rule
-    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(TEST_CONFIGURATIONS);
+    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(new JdbcConnectionProvider(TEST_CONFIGURATIONS));
 
     @Test
     public void shouldSaveAnExpense() throws Exception {
@@ -74,10 +76,7 @@ public class ExpensesAppTest {
         Response response = contextRule.restClient().get("http://localhost:8081/expenses");
         Assert.assertEquals(200, response.code());
 
-        List<Expense> actual = IOUtils.deserialize(
-                requireNonNull(response.body()).byteStream(), new TypeReference<List<Expense>>() {
-                }
-        );
+        List<Expense> actual = deserializeResponse(response);
 
         Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
                 .owner("example@test.org")
@@ -86,5 +85,43 @@ public class ExpensesAppTest {
                 .description("highway milan")
                 .amount(5.4)
                 .build()), actual);
+    }
+
+    @Test
+    public void shouldReturnAllTheExpensesInTheGivenDateRangeOrderedByDateDesc() {
+        databaseRule.executeUpdate("insert into expenses (owner, type, description, date, amount) values('example@test.org', 'MOTORBIKE', 'test 1', '2019-05-01', '5.4')");
+        databaseRule.executeUpdate("insert into expenses (owner, type, description, date, amount) values('example@test.org', 'MOTORBIKE', 'test 2', '2019-05-02', '5.4')");
+        databaseRule.executeUpdate("insert into expenses (owner, type, description, date, amount) values('example@test.org', 'MOTORBIKE', 'test 3', '2019-05-03', '5.4')");
+        databaseRule.executeUpdate("insert into expenses (owner, type, description, date, amount) values('example@test.org', 'MOTORBIKE', 'test 4', '2019-05-04', '5.4')");
+
+        Response response = contextRule.restClient()
+                .get("http://localhost:8081/expenses?date-start=20190502&date-end=20190503");
+        Assert.assertEquals(200, response.code());
+
+        List<Expense> actual = deserializeResponse(response);
+
+        Assert.assertEquals(Arrays.asList(
+                Expense.newBuilder()
+                        .owner("example@test.org")
+                        .date(LocalDate.of(2019, Month.MAY, 3))
+                        .type(ExpenseType.MOTORBIKE)
+                        .description("test 3")
+                        .amount(5.4)
+                        .build(),
+                Expense.newBuilder()
+                        .owner("example@test.org")
+                        .date(LocalDate.of(2019, Month.MAY, 2))
+                        .type(ExpenseType.MOTORBIKE)
+                        .description("test 2")
+                        .amount(5.4)
+                        .build()
+        ), actual);
+    }
+
+    private List<Expense> deserializeResponse(Response response) {
+        return IOUtils.deserialize(
+                requireNonNull(response.body()).byteStream(), new TypeReference<List<Expense>>() {
+                }
+        );
     }
 }
