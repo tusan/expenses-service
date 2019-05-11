@@ -18,13 +18,13 @@ import static org.junit.Assert.assertEquals;
 public class ExpenseServiceImplTest {
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNullDateStart() {
-        new ExpenseServiceImpl(null)
+        new ExpenseServiceImpl(new MockExpenseRepositoryFactory(null))
                 .getAllExpenses(null, LocalDate.of(2019, Month.JUNE, 1));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNullDateEnd() {
-        new ExpenseServiceImpl(null)
+        new ExpenseServiceImpl(new MockExpenseRepositoryFactory(null))
                 .getAllExpenses(LocalDate.of(2019, Month.JUNE, 1), null);
     }
 
