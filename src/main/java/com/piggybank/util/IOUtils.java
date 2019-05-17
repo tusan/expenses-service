@@ -2,6 +2,7 @@ package com.piggybank.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.BufferedReader;
@@ -18,6 +19,7 @@ public class IOUtils {
     static {
         OBJECT_MAPPER = new ObjectMapper();
         OBJECT_MAPPER.registerModule(new JavaTimeModule());
+        OBJECT_MAPPER.registerModule(new Jdk8Module());
     }
 
     public static Optional<String> readFileFromClassPath(String fileName) {

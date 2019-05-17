@@ -3,6 +3,7 @@ package com.piggybank.model;
 import com.google.common.collect.ImmutableMap;
 import com.piggybank.util.ExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;
+import com.piggybank.util.JdbcConnectionProvider;
 import com.piggybank.util.MapBasedConfReader;
 import org.junit.Assert;
 import org.junit.Before;
@@ -16,7 +17,7 @@ import java.time.Month;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.piggybank.model.JdbcConnectionProvider.*;
+import static com.piggybank.util.JdbcConnectionProvider.*;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 
@@ -25,7 +26,6 @@ public class JdbcExpenseRepositoryTest {
             ImmutableMap.<String, String>builder()
                     .put(SERVER_PORT, "8081")
                     .put(SERVER_HOST, "localhost")
-                    .put(DATABASE_DRIVER_NAME, "org.h2.Driver")
                     .put(DATABASE_URL, "jdbc:h2:~/test")
                     .put(DATABASE_USER, "sa")
                     .put(DATABASE_PASSWORD, "")
@@ -34,7 +34,7 @@ public class JdbcExpenseRepositoryTest {
     private final JdbcConnectionProvider jdbcConnectionProvider = new JdbcConnectionProvider(TEST_CONFIGURATIONS);
 
     @Rule
-    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(jdbcConnectionProvider);
+    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(jdbcConnectionProvider);
 
     private JdbcExpenseRepository sut;
 
@@ -53,6 +53,7 @@ public class JdbcExpenseRepositoryTest {
         Assert.assertEquals(
                 Arrays.asList(
                         Expense.newBuilder()
+                                .id(2L)
                                 .owner("example@test.org")
                                 .date(LocalDate.of(2019, Month.MAY, 4))
                                 .type(ExpenseType.MOTORBIKE)
@@ -60,6 +61,7 @@ public class JdbcExpenseRepositoryTest {
                                 .amount(5.4)
                                 .build(),
                         Expense.newBuilder()
+                                .id(1L)
                                 .owner("example@test.org")
                                 .date(LocalDate.of(2019, Month.MAY, 3))
                                 .type(ExpenseType.MOTORBIKE)
@@ -74,6 +76,7 @@ public class JdbcExpenseRepositoryTest {
     @Test
     public void shouldSaveAnExpense() throws SQLException {
         Expense expected = Expense.newBuilder()
+                .id(1L)
                 .owner("example@test.org")
                 .date(LocalDate.of(2018, Month.NOVEMBER, 27))
                 .description("this is a test")
@@ -85,6 +88,6 @@ public class JdbcExpenseRepositoryTest {
 
         ResultSet resultSet = databaseRule.executeQuery("select id, owner, type, description, date, amount from expenses where id = 1");
         Assert.assertTrue(resultSet.next());
-        Assert.assertEquals(expected, ResultSetConverter.toExpense(resultSet));
+        Assert.assertEquals(expected, ExpenseConverter.resultSetToEntity(resultSet));
     }
 }

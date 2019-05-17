@@ -1,6 +1,5 @@
 package com.piggybank.util;
 
-import com.piggybank.model.JdbcConnectionProvider;
 import org.junit.rules.ExternalResource;
 
 import java.sql.Connection;
@@ -14,7 +13,7 @@ public class InMemoryDatabaseRule extends ExternalResource {
     private final Connection connection;
 
     public InMemoryDatabaseRule(final JdbcConnectionProvider jdbcConnectionProvider) {
-        this.connection = jdbcConnectionProvider.provide();
+        this.connection = jdbcConnectionProvider.getConnection();
     }
 
     @Override

@@ -1,164 +1,44 @@
 package com.piggybank.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
 import java.time.LocalDate;
-import java.util.Objects;
+import java.util.Optional;
 
-@JsonDeserialize(builder = Expense.Builder.class)
-public class Expense {
-    private final Long id;
-    private final String owner;
-    private final ExpenseType type;
-    private final String description;
-    private final LocalDate date;
-    private final double amount;
-
-    private Expense(Long id,
-                    String owner,
-                    ExpenseType type,
-                    String description,
-                    LocalDate date,
-                    double amount) {
-        this.id = id;
-        this.owner = owner;
-        this.type = type;
-        this.description = description;
-        this.date = date;
-        this.amount = amount;
-    }
-
-    @JsonCreator
+@AutoValue
+public abstract class Expense {
     public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    @JsonProperty("id")
-    public Long id() {
-        return id;
-    }
-
-    @JsonProperty("owner")
-    String owner() {
-        return owner;
-    }
-
-    @JsonProperty("type")
-    ExpenseType type() {
-        return type;
+        return new AutoValue_Expense.Builder();
     }
 
     @Nullable
-    @JsonProperty("description")
-    String description() {
-        return description;
-    }
+    public abstract Long id();
 
-    @JsonProperty("date")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-    public LocalDate date() {
-        return date;
-    }
+    public abstract String owner();
 
-    @JsonProperty("amount")
-    double amount() {
-        return amount;
-    }
+    public abstract ExpenseType type();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Expense expense = (Expense) o;
-        return Double.compare(expense.amount, amount) == 0 &&
-                Objects.equals(owner, expense.owner) &&
-                type == expense.type &&
-                Objects.equals(description, expense.description) &&
-                Objects.equals(date, expense.date);
-    }
+    public abstract Optional<String> description();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, owner, type, description, date, amount);
-    }
+    public abstract LocalDate date();
 
-    @Override
-    public String toString() {
-        return MoreObjects.toStringHelper(this)
-                .add("id", id)
-                .add("owner", owner)
-                .add("type", type)
-                .add("description", description)
-                .add("date", date)
-                .add("amount", amount)
-                .toString();
-    }
+    public abstract double amount();
 
-    @JsonPOJOBuilder
-    public static class Builder {
-        private Long id;
-        private String owner;
-        private ExpenseType type;
-        private String description;
-        private LocalDate date;
-        private Double amount;
+    @AutoValue.Builder
+    public abstract static class Builder {
+        public abstract Builder id(Long id);
 
-        @JsonProperty("id")
-        Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
+        public abstract Builder owner(String owner);
 
-        @JsonProperty("owner")
-        public Builder owner(String owner) {
-            this.owner = owner;
-            return this;
-        }
+        public abstract Builder type(ExpenseType type);
 
-        @JsonProperty("type")
-        public Builder type(ExpenseType type) {
-            this.type = type;
-            return this;
-        }
+        public abstract Builder description(String description);
 
-        @JsonProperty("description")
-        @Nullable
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
+        public abstract Builder date(LocalDate date);
 
-        @JsonProperty("date")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMdd")
-        public Builder date(LocalDate date) {
-            this.date = date;
-            return this;
-        }
+        public abstract Builder amount(double amount);
 
-        @JsonProperty("amount")
-        public Builder amount(double amount) {
-            this.amount = amount;
-            return this;
-        }
-
-        public Expense build() {
-            Preconditions.checkNotNull(owner);
-            Preconditions.checkNotNull(type);
-            Preconditions.checkNotNull(date);
-            Preconditions.checkNotNull(amount);
-
-            return new Expense(id, owner, type, description, date, amount);
-        }
+        public abstract Expense build();
     }
 }

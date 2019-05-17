@@ -1,6 +1,6 @@
 package com.piggybank.server;
 
-import com.piggybank.model.Expense;
+import com.piggybank.service.ExpenseDto;
 import com.piggybank.service.ExpenseService;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -14,7 +14,7 @@ import static com.piggybank.util.IOUtils.serialize;
 import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
 class ExpenseController {
-    private ExpenseService expenseService;
+    private final ExpenseService expenseService;
 
     ExpenseController(ExpenseService expenseService) {
         this.expenseService = expenseService;
@@ -37,7 +37,7 @@ class ExpenseController {
     void save(HttpServerExchange exchange) {
         exchange.getRequestReceiver()
                 .receiveFullBytes((ex, message) -> {
-                    expenseService.save(deserialize(message, Expense.class));
+                    expenseService.save(deserialize(message, ExpenseDto.class));
                     ex.setStatusCode(201);
                 });
     }

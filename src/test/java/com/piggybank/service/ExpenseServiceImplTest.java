@@ -3,6 +3,7 @@ package com.piggybank.service;
 import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.model.ExpenseConverter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,8 +49,8 @@ public class ExpenseServiceImplTest {
                         LocalDate.of(2019, Month.MAY, 20)
                 ),
                 Arrays.asList(
-                        buildExpense(LocalDate.of(2019, Month.MAY, 3)),
-                        buildExpense(LocalDate.of(2019, Month.MAY, 4))
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 3)),
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 4))
                 )
         );
     }
@@ -68,8 +69,8 @@ public class ExpenseServiceImplTest {
                         LocalDate.of(2019, Month.MAY, 3)
                 ),
                 Arrays.asList(
-                        buildExpense(LocalDate.of(2019, Month.MAY, 2)),
-                        buildExpense(LocalDate.of(2019, Month.MAY, 3))
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 2)),
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 3))
                 )
         );
     }
@@ -90,9 +91,9 @@ public class ExpenseServiceImplTest {
                         LocalDate.of(2019, Month.MAY, 4)
                 ),
                 Arrays.asList(
-                        buildExpense(LocalDate.of(2019, Month.MAY, 2)),
-                        buildExpense(LocalDate.of(2019, Month.MAY, 3)),
-                        buildExpense(LocalDate.of(2019, Month.MAY, 4))
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 2)),
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 3)),
+                        buildExpenseDto(LocalDate.of(2019, Month.MAY, 4))
                 )
         );
     }
@@ -103,7 +104,7 @@ public class ExpenseServiceImplTest {
 
         ExpenseServiceImpl sut = new ExpenseServiceImpl(factoryMock);
 
-        sut.save(buildExpense(LocalDate.of(2019, Month.MAY, 3)));
+        sut.save(buildExpenseDto(LocalDate.of(2019, Month.MAY, 3)));
 
         assertEquals(buildExpense(LocalDate.of(2019, Month.MAY, 3)), factoryMock.saved);
     }
@@ -116,6 +117,10 @@ public class ExpenseServiceImplTest {
                 .description("test 2")
                 .amount(5.4)
                 .build();
+    }
+
+    private ExpenseDto buildExpenseDto(LocalDate localDate) {
+        return ExpenseConverter.entityToDto(buildExpense(localDate));
     }
 
     private class MockExpenseRepository implements ExpenseRepository {

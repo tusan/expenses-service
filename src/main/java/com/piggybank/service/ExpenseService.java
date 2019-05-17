@@ -1,12 +1,10 @@
 package com.piggybank.service;
 
-import com.piggybank.model.Expense;
-
 import java.time.LocalDate;
 import java.util.List;
 
 public interface ExpenseService {
-    void save(Expense expense);
+    void save(ExpenseDto expense);
 
-    List<Expense> getAllExpenses(LocalDate dateStart, LocalDate dateEnd);
+    List<ExpenseDto> getAllExpenses(LocalDate dateStart, LocalDate dateEnd);
 }

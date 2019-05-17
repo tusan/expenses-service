@@ -1,6 +1,7 @@
 package com.piggybank.model;
 
 import com.piggybank.util.ExternalConfReader;
+import com.piggybank.util.JdbcConnectionProvider;
 import dagger.Module;
 import dagger.Provides;
 

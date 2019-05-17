@@ -1,13 +1,14 @@
 package com.piggybank.service;
 
 import com.google.common.base.Preconditions;
-import com.piggybank.model.Expense;
 import com.piggybank.model.ExpenseRepository;
+import com.piggybank.model.ExpenseConverter;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.piggybank.model.ExpenseConverter.dtoToEntity;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 class ExpenseServiceImpl implements ExpenseService {
@@ -18,13 +19,13 @@ class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public void save(final Expense expense) {
+    public void save(final ExpenseDto expense) {
         expenseRepository
-                .save(expense);
+                .save(dtoToEntity(expense));
     }
 
     @Override
-    public List<Expense> getAllExpenses(final LocalDate dateStart, final LocalDate dateEnd) {
+    public List<ExpenseDto> getAllExpenses(final LocalDate dateStart, final LocalDate dateEnd) {
         Preconditions.checkArgument(dateStart != null);
         Preconditions.checkArgument(dateEnd != null);
 
@@ -33,6 +34,7 @@ class ExpenseServiceImpl implements ExpenseService {
                 .stream()
                 .filter(exp -> exp.date().isAfter(dateStart.minus(1, DAYS))
                         && exp.date().isBefore(dateEnd.plus(1, DAYS)))
+                .map(ExpenseConverter::entityToDto)
                 .collect(Collectors.toList());
     }
 }

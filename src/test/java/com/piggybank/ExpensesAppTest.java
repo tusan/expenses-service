@@ -2,10 +2,8 @@ package com.piggybank;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
-import com.piggybank.model.Expense;
+import com.piggybank.service.ExpenseDto;
 import com.piggybank.model.ExpenseType;
-import com.piggybank.model.JdbcConnectionProvider;
-import com.piggybank.model.ResultSetConverter;
 import com.piggybank.util.*;
 import okhttp3.Response;
 import org.junit.Assert;
@@ -19,7 +17,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.piggybank.model.JdbcConnectionProvider.*;
+import static com.piggybank.util.JdbcConnectionProvider.*;
+import static com.piggybank.model.ExpenseConverter.entityToDto;
+import static com.piggybank.model.ExpenseConverter.resultSetToEntity;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 import static java.util.Objects.requireNonNull;
@@ -30,25 +30,24 @@ public class ExpensesAppTest {
             ImmutableMap.<String, String>builder()
                     .put(SERVER_PORT, "8081")
                     .put(SERVER_HOST, "localhost")
-                    .put(DATABASE_DRIVER_NAME, "org.h2.Driver")
                     .put(DATABASE_URL, "jdbc:h2:~/test")
                     .put(DATABASE_USER, "sa")
                     .put(DATABASE_PASSWORD, "")
                     .build());
 
     @Rule
-    public EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(DaggerExpensesApp_ExpenseAppComponent
+    public final EmbeddedAppTestRule contextRule = new EmbeddedAppTestRule(DaggerExpensesApp_ExpenseAppComponent
             .builder()
             .externalConfReader(TEST_CONFIGURATIONS)
             .build()
             .injectDependencies());
 
     @Rule
-    public InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(new JdbcConnectionProvider(TEST_CONFIGURATIONS));
+    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(new JdbcConnectionProvider(TEST_CONFIGURATIONS));
 
     @Test
     public void shouldSaveAnExpense() throws Exception {
-        Expense expected = Expense.newBuilder()
+        ExpenseDto expected = ExpenseDto.newBuilder()
                 .owner("example@test.org")
                 .date(LocalDate.of(2018, Month.NOVEMBER, 27))
                 .description("this is a test")
@@ -64,7 +63,7 @@ public class ExpensesAppTest {
 
         ResultSet resultSet = databaseRule.executeQuery("select id, owner, type, description, date, amount from expenses where id = 1");
         Assert.assertTrue(resultSet.next());
-        Assert.assertEquals(expected, ResultSetConverter.toExpense(resultSet));
+        Assert.assertEquals(expected, entityToDto(resultSetToEntity(resultSet)));
     }
 
     @Test
@@ -75,9 +74,9 @@ public class ExpensesAppTest {
         Response response = contextRule.restClient().get("http://localhost:8081/expenses");
         Assert.assertEquals(200, response.code());
 
-        List<Expense> actual = deserializeResponse(response);
+        List<ExpenseDto> actual = deserializeResponse(response);
 
-        Assert.assertEquals(Collections.singletonList(Expense.newBuilder()
+        Assert.assertEquals(Collections.singletonList(ExpenseDto.newBuilder()
                 .owner("example@test.org")
                 .date(LocalDate.of(2019, Month.MAY, 2))
                 .type(ExpenseType.MOTORBIKE)
@@ -97,17 +96,17 @@ public class ExpensesAppTest {
                 .get("http://localhost:8081/expenses?date-start=20190502&date-end=20190503");
         Assert.assertEquals(200, response.code());
 
-        List<Expense> actual = deserializeResponse(response);
+        List<ExpenseDto> actual = deserializeResponse(response);
 
         Assert.assertEquals(Arrays.asList(
-                Expense.newBuilder()
+                ExpenseDto.newBuilder()
                         .owner("example@test.org")
                         .date(LocalDate.of(2019, Month.MAY, 3))
                         .type(ExpenseType.MOTORBIKE)
                         .description("test 3")
                         .amount(5.4)
                         .build(),
-                Expense.newBuilder()
+                ExpenseDto.newBuilder()
                         .owner("example@test.org")
                         .date(LocalDate.of(2019, Month.MAY, 2))
                         .type(ExpenseType.MOTORBIKE)
@@ -117,9 +116,9 @@ public class ExpensesAppTest {
         ), actual);
     }
 
-    private List<Expense> deserializeResponse(Response response) {
+    private List<ExpenseDto> deserializeResponse(Response response) {
         return IOUtils.deserialize(
-                requireNonNull(response.body()).byteStream(), new TypeReference<List<Expense>>() {
+                requireNonNull(response.body()).byteStream(), new TypeReference<List<ExpenseDto>>() {
                 }
         );
     }

@@ -1,10 +1,12 @@
 package com.piggybank.model;
 
+import com.piggybank.util.JdbcConnectionProvider;
+
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.piggybank.model.ResultSetConverter.toExpense;
+import static com.piggybank.model.ExpenseConverter.resultSetToEntity;
 import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
 
 class JdbcExpenseRepository implements ExpenseRepository {
@@ -21,14 +23,14 @@ class JdbcExpenseRepository implements ExpenseRepository {
     public List<Expense> getAllExpenses() {
         return wrapCheckedException(() -> {
             ResultSet resultSet = jdbcConnectionProvider
-                    .provide()
+                    .getConnection()
                     .createStatement()
                     .executeQuery(SELECT_ALL);
 
             ArrayList<Expense> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                result.add(toExpense(resultSet));
+                result.add(resultSetToEntity(resultSet));
             }
 
             return result;
@@ -38,13 +40,13 @@ class JdbcExpenseRepository implements ExpenseRepository {
     @Override
     public void save(Expense expense) {
         wrapCheckedException(() ->
-                jdbcConnectionProvider.provide()
+                jdbcConnectionProvider.getConnection()
                         .createStatement()
                         .executeUpdate(String.format(
                                 INSERT,
                                 expense.owner(),
                                 expense.type(),
-                                expense.description(),
+                                expense.description().orElse(null),
                                 expense.date(),
                                 expense.amount()
                         )));
