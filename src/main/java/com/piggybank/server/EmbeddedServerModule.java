@@ -5,7 +5,6 @@ import com.piggybank.util.ExternalConfReader;
 import dagger.Module;
 import dagger.Provides;
 import io.undertow.Undertow;
-import io.undertow.server.RoutingHandler;
 
 import javax.inject.Singleton;
 
@@ -16,8 +15,8 @@ public class EmbeddedServerModule {
 
     @Provides
     @Singleton
-    static Undertow provideServer(RoutingHandler routingHandler,
-                                  ExternalConfReader externalConfReader) {
+    static Undertow provideServer(final ExpenseService expenseService,
+                                  final ExternalConfReader externalConfReader) {
         final int port = externalConfReader
                 .get(SERVER_PORT)
                 .map(Integer::parseInt)
@@ -28,22 +27,9 @@ public class EmbeddedServerModule {
                 .orElse("localhost");
 
         return Undertow.builder()
-                .setHandler(routingHandler)
+                .setHandler(new ExpenseController(expenseService)
+                        .getRoutingHandlers())
                 .addHttpListener(port, host)
                 .build();
-    }
-
-    @Provides
-    @Singleton
-    static ExpenseController provideController(ExpenseService expenseService) {
-        return new ExpenseController(expenseService);
-    }
-
-    @Provides
-    @Singleton
-    static RoutingHandler provideRoutingHandler(final ExpenseController expenseController) {
-        return new RoutingHandler()
-                .get("/expenses", expenseController::loadAll)
-                .put("/expense", expenseController::save);
     }
 }
