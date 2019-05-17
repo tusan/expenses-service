@@ -2,7 +2,7 @@ package com.piggybank.util;
 
 import org.junit.rules.ExternalResource;
 
-import java.sql.Connection;
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 
 import static com.piggybank.util.ExceptionUtils.wrapCheckedException;
@@ -10,10 +10,10 @@ import static com.piggybank.util.IOUtils.readFileFromClassPath;
 
 public class InMemoryDatabaseRule extends ExternalResource {
 
-    private final Connection connection;
+    private final DataSource dataSource;
 
-    public InMemoryDatabaseRule(final JdbcConnectionProvider jdbcConnectionProvider) {
-        this.connection = jdbcConnectionProvider.getConnection();
+    public InMemoryDatabaseRule(final DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @Override
@@ -27,10 +27,14 @@ public class InMemoryDatabaseRule extends ExternalResource {
     }
 
     public void executeUpdate(final String query) {
-        wrapCheckedException(() -> connection.createStatement().executeUpdate(query));
+        wrapCheckedException(() -> dataSource.getConnection()
+                .createStatement()
+                .executeUpdate(query));
     }
 
     public ResultSet executeQuery(String query) {
-        return wrapCheckedException(() -> connection.createStatement().executeQuery(query));
+        return wrapCheckedException(() -> dataSource.getConnection()
+                .createStatement()
+                .executeQuery(query));
     }
 }

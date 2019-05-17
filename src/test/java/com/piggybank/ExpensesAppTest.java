@@ -2,8 +2,8 @@ package com.piggybank;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
-import com.piggybank.service.ExpenseDto;
 import com.piggybank.model.ExpenseType;
+import com.piggybank.service.ExpenseDto;
 import com.piggybank.util.*;
 import okhttp3.Response;
 import org.junit.Assert;
@@ -17,9 +17,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.piggybank.util.JdbcConnectionProvider.*;
 import static com.piggybank.model.ExpenseConverter.entityToDto;
 import static com.piggybank.model.ExpenseConverter.resultSetToEntity;
+import static com.piggybank.model.JdbcExpenseRepositoryModule.*;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 import static java.util.Objects.requireNonNull;
@@ -43,7 +43,7 @@ public class ExpensesAppTest {
             .injectDependencies());
 
     @Rule
-    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(new JdbcConnectionProvider(TEST_CONFIGURATIONS));
+    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(provideDataSource(TEST_CONFIGURATIONS));
 
     @Test
     public void shouldSaveAnExpense() throws Exception {

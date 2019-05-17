@@ -3,13 +3,13 @@ package com.piggybank.model;
 import com.google.common.collect.ImmutableMap;
 import com.piggybank.util.ExternalConfReader;
 import com.piggybank.util.InMemoryDatabaseRule;
-import com.piggybank.util.JdbcConnectionProvider;
 import com.piggybank.util.MapBasedConfReader;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -17,7 +17,7 @@ import java.time.Month;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.piggybank.util.JdbcConnectionProvider.*;
+import static com.piggybank.model.JdbcExpenseRepositoryModule.*;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_HOST;
 import static com.piggybank.server.EmbeddedServerModule.SERVER_PORT;
 
@@ -31,16 +31,16 @@ public class JdbcExpenseRepositoryTest {
                     .put(DATABASE_PASSWORD, "")
                     .build());
 
-    private final JdbcConnectionProvider jdbcConnectionProvider = new JdbcConnectionProvider(TEST_CONFIGURATIONS);
+    private final DataSource dataSource = provideDataSource(TEST_CONFIGURATIONS);
 
     @Rule
-    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(jdbcConnectionProvider);
+    public final InMemoryDatabaseRule databaseRule = new InMemoryDatabaseRule(dataSource);
 
     private JdbcExpenseRepository sut;
 
     @Before
     public void setUp() {
-        sut = new JdbcExpenseRepository(jdbcConnectionProvider);
+        sut = new JdbcExpenseRepository(dataSource);
     }
 
     @Test

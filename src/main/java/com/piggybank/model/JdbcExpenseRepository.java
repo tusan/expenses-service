@@ -1,7 +1,6 @@
 package com.piggybank.model;
 
-import com.piggybank.util.JdbcConnectionProvider;
-
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,16 +12,16 @@ class JdbcExpenseRepository implements ExpenseRepository {
     private static final String SELECT_ALL = "select id, owner, type, description, date, amount from expenses order by date desc limit 1000";
     private static final String INSERT = "insert into expenses (owner, type, description, date, amount) values('%s', '%s', '%s', '%s', '%s')";
 
-    private final JdbcConnectionProvider jdbcConnectionProvider;
+    private final DataSource dataSource;
 
-    JdbcExpenseRepository(JdbcConnectionProvider jdbcConnectionProvider) {
-        this.jdbcConnectionProvider = jdbcConnectionProvider;
+    JdbcExpenseRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @Override
     public List<Expense> getAllExpenses() {
         return wrapCheckedException(() -> {
-            ResultSet resultSet = jdbcConnectionProvider
+            ResultSet resultSet = dataSource
                     .getConnection()
                     .createStatement()
                     .executeQuery(SELECT_ALL);
@@ -40,7 +39,7 @@ class JdbcExpenseRepository implements ExpenseRepository {
     @Override
     public void save(Expense expense) {
         wrapCheckedException(() ->
-                jdbcConnectionProvider.getConnection()
+                dataSource.getConnection()
                         .createStatement()
                         .executeUpdate(String.format(
                                 INSERT,
