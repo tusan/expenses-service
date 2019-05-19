@@ -12,6 +12,18 @@ repositories {
     mavenCentral()
 }
 
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.piggybank.ExpensesApp'
+        )
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:2.9.8"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.9.8"
@@ -32,3 +44,10 @@ dependencies {
     compile "com.h2database:h2:1.4.199"
     testCompile "junit:junit:4.12"
 }
+
+task copyJar(type: Copy) {
+    from "build/libs/expenses-service-1.0-SNAPSHOT.jar"
+    into "docker"
+}
+
+build.dependsOn copyJar

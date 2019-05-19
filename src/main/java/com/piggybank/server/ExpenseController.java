@@ -23,8 +23,13 @@ class ExpenseController {
 
     RoutingHandler getRoutingHandlers() {
         return new RoutingHandler()
+                .get("/", this::health)
                 .get("/expenses", this::loadAll)
                 .put("/expense", this::save);
+    }
+
+    private void health(HttpServerExchange exchange) {
+        exchange.getResponseSender().send("Healty!");
     }
 
     private void loadAll(HttpServerExchange exchange) {
